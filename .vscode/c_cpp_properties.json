@@ -1,0 +1,31 @@
+    {
+        "version": 4,
+        "configurations": [
+            {
+                "name": "STM32F407",
+                "includePath": [
+                    "${workspaceFolder}/Inc",
+                    "${workspaceFolder}/driver/inc",
+                    "${workspaceFolder}/driver/Mylib/Inc",
+                    "${workspaceFolder}/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include",
+                    "${workspaceFolder}/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F",
+                    "${workspaceFolder}/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/examples/coverity"
+                ],
+                "defines": [
+                    "STM32F407xx",
+                    "USE_HAL_DRIVER",
+                    "ARM_MATH_CM4"
+                ],
+                "compilerPath": "arm-none-eabi-gcc",
+                "cStandard": "gnu11",
+                "cppStandard": "gnu++14",
+                "intelliSenseMode": "gcc-arm",
+                "compilerArgs": [
+                    "-mcpu=cortex-m4",
+                    "-mthumb",
+                    "-mfpu=fpv4-sp-d16",
+                    "-mfloat-abi=hard"
+                ]
+            }
+        ]
+    }

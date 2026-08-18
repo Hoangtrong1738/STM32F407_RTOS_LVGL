@@ -1,0 +1,20 @@
+{
+    "C_Cpp.default.compilerPath": "arm-none-eabi-gcc",
+    "C_Cpp.default.intelliSenseMode": "gcc-arm",
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c",
+        "FreeRTOSConfig.h": "c"
+    },
+    "makefile.launchConfigurations": [],
+    "makefile.configureOnOpen": true,
+    "search.exclude": {
+        "**/build": true,
+        "**/*.o": true,
+        "**/*.d": true
+    },
+    "files.exclude": {
+        "**/*.o": true,
+        "**/*.d": true
+    }
+}

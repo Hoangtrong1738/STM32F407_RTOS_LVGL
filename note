@@ -1,0 +1,125 @@
+
+All:
+	arm-none-eabi-gcc -c Src\test_timer.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\test_timer.o
+	arm-none-eabi-gcc -c driver\scr\clock.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\clock.o
+	arm-none-eabi-gcc -c driver\scr\gpio.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\gpio.o
+	arm-none-eabi-gcc -c driver\scr\i2c.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\i2c.o
+	arm-none-eabi-gcc -c driver\scr\spi.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\spi.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\motor.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\motor.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\delay.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\delay.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\control.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\control.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\pid.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\pid.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\encoder.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\encoder.o
+	arm-none-eabi-gcc -c driver\scr\uart.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\inc -IInc -o build\uart.o
+	arm-none-eabi-gcc -c driver\scr\adc.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\adc.o
+	arm-none-eabi-gcc -c driver\Mylib\Src\kinematics.c -mcpu=cortex-m4 -mthumb -std=gnu11 -Idriver\inc -Idriver\Mylib\Inc -IInc -o build\kinematics.o
+	arm-none-eabi-gcc -x assembler-with-cpp -c Startup\startup_stm32f407vetx.s -mcpu=cortex-m4 -mthumb -o build\startup.o
+	arm-none-eabi-gcc build/test_timer.o build/clock.o build/gpio.o build/i2c.o build/spi.o build/delay.o build/uart.o build/startup.o build/motor.o -mcpu=cortex-m4 -mthumb -T"STM32F407VETX_FLASH.ld" -Wl,-Map="file.map" -Wl,--gc-sections -static -o build/blink_led.elf
+	arm-none-eabi-objcopy -O ihex build/blink_led.elf build/blink_led.hex
+	arm-none-eabi-objcopy -O binary build/blink_led.elf build/blink_led.bin
+
+
+arm-none-eabi-gcc build/test_timer.o build/clock.o build/gpio.o build/i2c.o build/spi.o build/delay.o build\kinematics.o build/uart.o build\control.o build/motor.o build\encoder.o build\pid.o build/startup.o -mcpu=cortex-m4 -mthumb -T"STM32F407VETX_FLASH.ld" -Wl,-Map="file.map" -Wl,--gc-sections -static -o build/blink_led.elf
+clean:
+	del /Q build\*.o
+	del /Q build\*.elf
+	del /Q build\*.hex
+	del /Q build\*.bin
+	del /Q build\*.map
+
+Flash:
+	STM32_Programmer_CLI -c port=SWD mode=UR -w build\blink_led.hex -v -rst
+	
+mingw32-make
+	
+	ST-LINK_CLI -c SWD -HardRst HIGH -P build\blink_led.hex -V -Run
+	STM32_Programmer_CLI -c port=SWD -w build\blink_led.hex -v -rst
+
+
+Click vào file bất kỳ trong project (để focus không còn ở keybindings.json)
+Bấm Ctrl+Alt+C → phải chạy task Clean
+Bấm Ctrl+Alt+F → phải chạy task Flash (build rồi nạp code)
+Bấm Ctrl+Alt+R → phải chạy task Rebuild (clean + build)
+
+
+
+	TARGET      := build/blink_led
+BUILD_DIR   := build
+MAP_FILE    := file.map
+LINKER      := STM32F407VETX_FLASH.ld
+
+CC          := arm-none-eabi-gcc
+OBJCOPY     := arm-none-eabi-objcopy
+
+CPU_FLAGS   := -mcpu=cortex-m4 -mthumb
+CSTD        := -std=gnu11
+OPT         := -O0 -g
+
+INCLUDE_DIRS := \
+	driver/inc \
+	driver/Mylib/Inc \
+	Inc
+
+SRC_DIRS := \
+	Src \
+	driver/scr \
+	driver/Mylib/Src
+
+# File dang viet do hoac chua muon build thi de o day.
+EXCLUDE_SRCS := 
+
+# Khi LVGL da co lv_conf.h va port display/touch, bat 3 dong duoi:
+# LVGL_DIR := lvgl/lvgl-master
+# INCLUDE_DIRS += $(LVGL_DIR) $(LVGL_DIR)/src
+# SRC_DIRS += $(LVGL_DIR)/src
+
+ASM_SOURCES := Startup/startup_stm32f407vetx.s
+
+rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+C_SOURCES := $(foreach dir,$(SRC_DIRS),$(call rwildcard,$(dir)/,*.c))
+C_SOURCES := $(filter-out $(EXCLUDE_SRCS),$(C_SOURCES))
+
+OBJECTS := \
+	$(addprefix $(BUILD_DIR)/,$(C_SOURCES:.c=.o)) \
+	$(addprefix $(BUILD_DIR)/,$(ASM_SOURCES:.s=.o))
+
+DEPS := $(OBJECTS:.o=.d)
+
+INCLUDES := $(addprefix -I,$(INCLUDE_DIRS))
+CFLAGS   := $(CPU_FLAGS) $(CSTD) $(OPT) -ffunction-sections -fdata-sections -MMD -MP $(INCLUDES)
+ASFLAGS  := $(CPU_FLAGS)
+LDFLAGS  := $(CPU_FLAGS) -T"$(LINKER)" -Wl,-Map="$(MAP_FILE)" -Wl,--gc-sections -static --specs=nosys.specs
+
+.PHONY: all clean Flash print
+
+all: $(TARGET).elf $(TARGET).hex $(TARGET).bin
+
+$(TARGET).hex: $(TARGET).elf
+	$(OBJCOPY) -O ihex $< $@
+
+$(TARGET).bin: $(TARGET).elf
+	$(OBJCOPY) -O binary $< $@
+
+$(TARGET).elf: $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/%.o: %.c
+	@if not exist "$(subst /,\,$(@D))" mkdir "$(subst /,\,$(@D))"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/%.o: %.s
+	@if not exist "$(subst /,\,$(@D))" mkdir "$(subst /,\,$(@D))"
+	$(CC) -x assembler-with-cpp -c $< $(ASFLAGS) -o $@
+
+print:
+	@echo C_SOURCES=$(C_SOURCES)
+	@echo OBJECTS=$(OBJECTS)
+
+clean:
+	@if exist "$(BUILD_DIR)" rmdir /S /Q "$(BUILD_DIR)"
+	@if exist "$(MAP_FILE)" del /Q "$(MAP_FILE)"
+
+Flash:
+	STM32_Programmer_CLI -c port=SWD mode=UR -w $(TARGET).hex -v -rst
+
+-include $(DEPS)
