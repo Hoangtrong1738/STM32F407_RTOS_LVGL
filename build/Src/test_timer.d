@@ -10,7 +10,14 @@ build/Src/test_timer.o: Src/test_timer.c driver/inc/gpio.h \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/portmacro.h \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/mpu_wrappers.h \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h \
- FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/queue.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/event_groups.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/timers.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/semphr.h \
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/queue.h \
+ driver/Mylib/Inc/dht11.h
 driver/inc/gpio.h:
 driver/inc/stm32f407xx.h:
 driver/inc/gpio.h:
@@ -29,3 +36,10 @@ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/portmacro.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/mpu_wrappers.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/queue.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/event_groups.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/timers.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/semphr.h:
+FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/queue.h:
+driver/Mylib/Inc/dht11.h:

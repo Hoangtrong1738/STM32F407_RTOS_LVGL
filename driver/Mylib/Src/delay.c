@@ -9,7 +9,7 @@
 #include "delay.h"
 #define TIMER2 1
 #define SYS_TICK 2
-//#define DELAY_SRC TIMER2
+//#define DELAY_SRC SYS_TICK
 #define DELAY_SRC TIMER2
 
 #define TIM2_CLK_MHz 84

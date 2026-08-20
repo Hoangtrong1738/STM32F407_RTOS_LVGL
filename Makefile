@@ -21,13 +21,20 @@ SRC_DIRS := \
 	driver/scr \
 	driver/Mylib/Src
 
+DEFS :=
+
 # File dang viet do hoac chua muon build thi de o day.
 EXCLUDE_SRCS := 
 
-# Khi LVGL da co lv_conf.h va port display/touch, bat 3 dong duoi:
+# Bat LVGL khi can build UI:
+#   mingw32-make USE_LVGL=1
+USE_LVGL ?= 0
 LVGL_DIR := lvgl/lvgl-master
+ifeq ($(USE_LVGL),1)
 INCLUDE_DIRS += $(LVGL_DIR) $(LVGL_DIR)/src
 SRC_DIRS += $(LVGL_DIR)/src
+DEFS += -DLV_CONF_INCLUDE_SIMPLE
+endif
 
 ASM_SOURCES := Startup/startup_stm32f407vetx.s
 
@@ -64,7 +71,6 @@ OBJECTS := \
 DEPS := $(OBJECTS:.o=.d)
 
 INCLUDES := $(addprefix -I,$(INCLUDE_DIRS))
-DEFS     := -DLV_CONF_INCLUDE_SIMPLE
 CFLAGS   := $(CPU_FLAGS) $(CSTD) $(OPT) -ffunction-sections -fdata-sections -MMD -MP $(INCLUDES) $(DEFS)
 ASFLAGS  := $(CPU_FLAGS)
 LDFLAGS  := $(CPU_FLAGS) -T"$(LINKER)" -Wl,-Map="$(MAP_FILE)" -Wl,--gc-sections -static --specs=nosys.specs
