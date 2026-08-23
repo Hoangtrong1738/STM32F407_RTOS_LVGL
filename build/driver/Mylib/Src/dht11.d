@@ -9,7 +9,7 @@ build/driver/Mylib/Src/dht11.o: driver/Mylib/Src/dht11.c \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/portmacro.h \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/mpu_wrappers.h \
  FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h \
- FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h driver/inc/uart.h
+ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h
 driver/Mylib/Inc/dht11.h:
 driver/inc/stm32f407xx.h:
 driver/inc/gpio.h:
@@ -25,4 +25,3 @@ FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F/portmacro.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/mpu_wrappers.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/task.h:
 FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/include/list.h:
-driver/inc/uart.h:

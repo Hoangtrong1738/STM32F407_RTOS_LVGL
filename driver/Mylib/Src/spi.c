@@ -49,7 +49,7 @@ char spi_read_data(char reg)
 
     //send reg to slave - write reg value to DR of SPI1
     while(((*SR >> 1) & 1) != 1 ); // wait TX empty to write data  DR
-    *DR = reg;
+    *DR = reg | (1 << 7);
     while(((*SR >> 1) & 1) == 1); // wait data be transfered to TX bufer 
     while(((*SR >> 0) & 1) != 1); // wait RXNE not empty (has recv data) 
     while(((*SR >> 7) & 1) == 1);  // wait not busy
@@ -68,4 +68,32 @@ char spi_read_data(char reg)
     spi_inactive_slave();
     
     return temp;
+}
+
+void spi_write_data(char reg, char data)
+{
+    u32 *DR = (u32*)(0x4001300c);
+    u32 *SR = (u32*)(0x40013008);
+    // active slave - set to low
+    spi_inactive_slave();
+    // send reg to slave - write reg value to DR of SPI1 
+// cho biet 1 da trong
+    while(((*SR >> 1 ) & 1) != 1); // TX empty  to write data DR 
+    *DR = reg;
+    while(((*SR >> 1) & 1) == 1); // wait data be transfered to TX buffer
+    while (((*SR >> 0) & 1) != 1); // wait RXNE not empty(has recv data) to read data
+    while(((*SR >> 7) & 1) == 1); //  wait not busy 
+
+    // clear spam data - read data from DR
+    u8 temp = *DR;// send clock for slave to slave send data to master, write dummy data ( 0x00 or 0xff) to DR
+    while(((*SR >> 1) & 1) != 1 ); // wait TX empty to write data  DR
+    *DR = data;
+    while(((*SR >> 1) & 1) == 1); // wait data be transfered to TX bufer 
+    while(((*SR >> 0) & 1) != 1); // wait RXNE not empty (has recv data) 
+    while(((*SR >> 7) & 1) == 1);  // wait not busy
+    // read data from  DR
+    temp = *DR;
+    // inactive slave - set PE3 to HIGH
+    spi_inactive_slave();
+    
 }

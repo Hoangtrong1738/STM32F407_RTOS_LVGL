@@ -5,7 +5,6 @@
 #include "task.h"
 #include "stddef.h"
 #include <stdint.h>
-#include "uart.h"
 #define DHT_TIMEOUT_US 520U
 
 static u8 dht_read_pin(dht_handle_t *dht)
@@ -75,27 +74,26 @@ u8 dht_start(dht_handle_t *dht)
 {
     dht_setout(dht);
     dht->port->ODR &= ~(1U << dht->pin);
-    vTaskDelay(pdMS_TO_TICKS(20));
-
+    vTaskDelay(pdMS_TO_TICKS(20)); 
     dht_setin(dht);
     delay_us(40);
 
     if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
     {
-        printlog("1");
+        
         
         return 0;
     }
 
     if(!dht_wait_level(dht, 1, DHT_TIMEOUT_US))
     {
-        printlog("2");
+        
         return 0;
     }
 
     if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
     {
-        printlog("3");
+        
         return 0;
     }
 
@@ -110,7 +108,7 @@ static u8 dht_read_byte(dht_handle_t *dht, u8 *value)
     {
         if(!dht_wait_level(dht, 1, DHT_TIMEOUT_US))
         {
-            printlog("4");
+            
             return 0;
         }
 
@@ -122,8 +120,7 @@ static u8 dht_read_byte(dht_handle_t *dht, u8 *value)
         }
 
         if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
-        {
-            printlog("5");
+        {          
             return 0;
         }
     }
@@ -134,16 +131,36 @@ static u8 dht_read_byte(dht_handle_t *dht, u8 *value)
 
 u8 dht_read_TempHum(dht_handle_t *dht)
 {
-    if(!dht_start(dht))
+    u8 ok = 0;
+
+    dht_setout(dht);
+    dht->port->ODR &= ~(1U << dht->pin);
+    vTaskDelay(pdMS_TO_TICKS(20));
+
+    taskENTER_CRITICAL(); // khóa ngắt/scheduler ở mức RTSOS, để đoạn code bên trong chạy liền mạch, không bị task khác sen vào
+     
+
+    dht_setin(dht);
+    delay_us(40);
+
+    if(dht_wait_level(dht, 0, DHT_TIMEOUT_US) &&
+       dht_wait_level(dht, 1, DHT_TIMEOUT_US) &&
+       dht_wait_level(dht, 0, DHT_TIMEOUT_US) &&
+       dht_read_byte(dht, &dht->RH1) &&
+       dht_read_byte(dht, &dht->RH2) &&
+       dht_read_byte(dht, &dht->T1) &&
+       dht_read_byte(dht, &dht->T2) &&
+       dht_read_byte(dht, &dht->sum))
+    {
+        ok = 1;
+    }
+
+    taskEXIT_CRITICAL();
+
+    if(!ok)
     {
         return 0;
     }
-
-    if(!dht_read_byte(dht, &dht->RH1)) return 0;
-    if(!dht_read_byte(dht, &dht->RH2)) return 0;
-    if(!dht_read_byte(dht, &dht->T1)) return 0;
-    if(!dht_read_byte(dht, &dht->T2)) return 0;
-    if(!dht_read_byte(dht, &dht->sum)) return 0;
 
     if((u8)(dht->RH1 + dht->RH2 + dht->T1 + dht->T2) != dht->sum)
     {

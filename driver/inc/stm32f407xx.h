@@ -128,6 +128,13 @@ typedef int32_t i32;
 #define TIM11_BASEADDR      (APB2PERIPH_BASEADDR + 0x4800)
 
 
+#define DMA1_BASEADDR     (AHB1PERIPH_BASEADDR + 0x6000U)
+#define DMA2_BASEADDR     (AHB1PERIPH_BASEADDR + 0x6400U)
+#define DMA2D_BASEADDR    (AHB1PERIPH_BASEADDR + 0xB000U)
+
+
+
+
 
 
 // peripheral register definition structures
@@ -242,20 +249,7 @@ typedef struct
 }SPI_Handle_t;
 
 
-typedef struct
-{
-	_vo u32 CR1;
-	_vo u32 CR2;
-	_vo u32 OAR1;
-	_vo u32 OAR2;
-	_vo u32 DR;
-	_vo u32 SR1;
-	_vo u32 SR2;
-	_vo u32 CCR;
-	_vo u32 TRISE;
-	_vo u32 FLTR;
 
-}I2C_RegDef_t;
 
 
 /*
@@ -678,59 +672,62 @@ typedef struct
 
 typedef struct
 {
-	_vo u32 LISR;          /*Offset:  */
+	_vo u32 CR;
+	_vo u32 NDTR;
+	_vo u32 PAR;
+	_vo u32 M0AR;
+	_vo u32 M1AR;
+	_vo u32 FCR;
+}DMA_Stream_RegDef_t;
+
+typedef struct
+{
+	_vo u32 LISR;
 	_vo u32 HISR;
 	_vo u32 LIFCR;
 	_vo u32 HIFCR;
-	_vo u32 S0CR;
-	_vo u32 S0NDTR;
-	_vo u32 S0PAR;
-	_vo u32 S0M0AR;
-	_vo u32 S0M1AR;
-	_vo u32 S0FCR;
-	_vo u32 S1CR;
-	_vo u32 S1NDTR;         /*Offset:  */
-	_vo u32 S1PAR;
-	_vo u32 S1M0AR;
-	_vo u32 S1M1AR;
-	_vo u32 S1FCR;
-	_vo u32 S2NDTR;
-	_vo u32 S2PAR;
-	_vo u32 S2M0AR;
-	_vo u32 S2M1AR;
-	_vo u32 S2FCR;
-	_vo u32 S3CR;
-	_vo u32 S3NDTR;;          /*Offset:  */
-	_vo u32 S3PAR;
-	_vo u32 S3M0AR;
-	_vo u32 S3M1AR;
-	_vo u32 S3FCR;
-	_vo u32 S4CR;
-	_vo u32 S4NDTR;
-	_vo u32 S4PAR;
-	_vo u32 S4M0AR;
-	_vo u32 S4M1AR;
-	_vo u32 S4FCR;
-	_vo u32 S5CR;
-	_vo u32 S5NDTR;
-	_vo u32 S5PAR;
-	_vo u32 S5M0AR;
-	_vo u32 S5M1AR;;          /*Offset:  */
-	_vo u32 S5FCR;
-	_vo u32 S6CR;
-	_vo u32 S6NDTR;
-	_vo u32 S6PAR;
-	_vo u32 S6M0AR;
-	_vo u32 S6M1AR;
-	_vo u32 S6FCR;
-	_vo u32 S7CR;
-	_vo u32 S7NDTR;
-	_vo u32 S7PAR;
-	_vo u32 S7M0AR;
-	_vo u32 S7M1AR;
-	_vo u32 S7FCR;
-
+	DMA_Stream_RegDef_t S[8];
 }DMA_RegDef_t;
+
+/*
+ * Bit position definitions DMA_SxCR
+ */
+#define DMA_SxCR_EN                       0
+#define DMA_SxCR_DMEIE                    1
+#define DMA_SxCR_TEIE                     2
+#define DMA_SxCR_HTIE                     3
+#define DMA_SxCR_TCIE                     4
+#define DMA_SxCR_PFCTRL                   5
+#define DMA_SxCR_DIR                      6
+#define DMA_SxCR_CIRC                     8
+#define DMA_SxCR_PINC                     9
+#define DMA_SxCR_MINC                     10
+#define DMA_SxCR_PSIZE                    11
+#define DMA_SxCR_MSIZE                    13
+#define DMA_SxCR_PINCOS                   15
+#define DMA_SxCR_PL                       16
+#define DMA_SxCR_DBM                      18
+#define DMA_SxCR_CT                       19
+#define DMA_SxCR_PBURST                   21
+#define DMA_SxCR_MBURST                   23
+#define DMA_SxCR_CHSEL                    25
+
+#define DMA_DIR_PERIPHERAL_TO_MEMORY      0
+#define DMA_DIR_MEMORY_TO_PERIPHERAL      1
+#define DMA_DIR_MEMORY_TO_MEMORY          2
+
+#define DMA_PRIORITY_LOW                  0
+#define DMA_PRIORITY_MEDIUM               1
+#define DMA_PRIORITY_HIGH                 2
+#define DMA_PRIORITY_VERY_HIGH            3
+
+/*
+ * DMA2 Stream 3 flags in LISR/LIFCR.
+ * SPI1_TX on STM32F407: DMA2 Stream 3 Channel 3.
+ */
+#define DMA_STREAM3_FLAG_MASK             0x0F400000U
+#define DMA_STREAM3_TCIF                  (1U << 27)
+#define DMA_STREAM3_TEIF                  (1U << 25)
 
 typedef struct
 {
@@ -838,6 +835,10 @@ typedef struct
 #define USART2      ((USART_RegDef_t*)USART2_BASE)
 #define USART3      ((USART_RegDef_t*)USART3_BASE)
 
+
+#define DMA1         ((DMA_RegDef_t*)DMA1_BASEADDR)
+#define DMA2         ((DMA_RegDef_t*)DMA2_BASEADDR)
+#define DMA2D        ((DMA_RegDef_t*)DMA2D_BASEADDR)
 /*
   Clock Enable/Disable Macros for Gpiox peripherals
 
