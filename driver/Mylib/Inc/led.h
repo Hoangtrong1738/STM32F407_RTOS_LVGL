@@ -2,17 +2,10 @@
 #define LED_H
 
 #include "stm32f407xx.h"
-typedef enum
-{
-    A6,
-    A7
-
-}led_t;
-
-void led_init();
-void led_on(led_t state);
-void led_off(led_t state);
-void led_toggle(led_t state);
+void led_init(GPIO_RegDef_t *port,u8 pin);
+void led_on(GPIO_RegDef_t *port,u8 pin);
+void led_off(GPIO_RegDef_t *port,u8 pin);
+void led_toggle(GPIO_RegDef_t *port,u8 pin);
 
 
 #endif

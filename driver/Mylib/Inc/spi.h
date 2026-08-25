@@ -14,7 +14,10 @@ void spi1_enable_tx_only(void);
 void spi1_enable_full_duplex(void);
 void spi1_write8(u8 data);
 void spi1_write_blocking(const u8 *data, u32 len);
+void spi1_write_dma_start(const u8 *data, u32 len);
+void spi1_write_dma_wait(void);
 void spi1_write_dma(const u8 *data, u32 len);
+u8 spi1_dma_tx_is_busy(void);
 u8 spi1_transfer(u8 data);
 
 #endif

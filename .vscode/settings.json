@@ -25,5 +25,6 @@
     "files.exclude": {
         "**/*.o": true,
         "**/*.d": true
-    }
+    },
+    "cmake.sourceDirectory": "D:/STM32F407_poj/lvgl/lvgl-master"
 }

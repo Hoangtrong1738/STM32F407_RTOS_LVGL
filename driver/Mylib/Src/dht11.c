@@ -12,7 +12,7 @@ static u8 dht_read_pin(dht_handle_t *dht)
     return ((dht->port->IDR & (1U << dht->pin)) != 0U) ? 1U : 0U;
 }
 
-static u8 dht_wait_level(dht_handle_t *dht, u8 level, u32 timeout_us)
+static u8 dht_wait(dht_handle_t *dht, u8 level, u32 timeout_us)
 {
     while(timeout_us--)
     {
@@ -77,21 +77,18 @@ u8 dht_start(dht_handle_t *dht)
     vTaskDelay(pdMS_TO_TICKS(20)); 
     dht_setin(dht);
     delay_us(40);
-
-    if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
-    {
-        
-        
+    if(!dht_wait(dht, 0, DHT_TIMEOUT_US))
+    {   
         return 0;
     }
 
-    if(!dht_wait_level(dht, 1, DHT_TIMEOUT_US))
+    if(!dht_wait(dht, 1, DHT_TIMEOUT_US))
     {
         
         return 0;
     }
 
-    if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
+    if(!dht_wait(dht, 0, DHT_TIMEOUT_US))
     {
         
         return 0;
@@ -106,7 +103,7 @@ static u8 dht_read_byte(dht_handle_t *dht, u8 *value)
 
     for(u8 i = 0; i < 8; i++)
     {
-        if(!dht_wait_level(dht, 1, DHT_TIMEOUT_US))
+        if(!dht_wait(dht, 1, DHT_TIMEOUT_US))
         {
             
             return 0;
@@ -119,7 +116,7 @@ static u8 dht_read_byte(dht_handle_t *dht, u8 *value)
             data |= (1U << (7U - i));
         }
 
-        if(!dht_wait_level(dht, 0, DHT_TIMEOUT_US))
+        if(!dht_wait(dht, 0, DHT_TIMEOUT_US))
         {          
             return 0;
         }
@@ -138,14 +135,12 @@ u8 dht_read_TempHum(dht_handle_t *dht)
     vTaskDelay(pdMS_TO_TICKS(20));
 
     taskENTER_CRITICAL(); // khóa ngắt/scheduler ở mức RTSOS, để đoạn code bên trong chạy liền mạch, không bị task khác sen vào
-     
-
     dht_setin(dht);
     delay_us(40);
 
-    if(dht_wait_level(dht, 0, DHT_TIMEOUT_US) &&
-       dht_wait_level(dht, 1, DHT_TIMEOUT_US) &&
-       dht_wait_level(dht, 0, DHT_TIMEOUT_US) &&
+    if(dht_wait(dht, 0, DHT_TIMEOUT_US) &&
+       dht_wait(dht, 1, DHT_TIMEOUT_US) &&
+       dht_wait(dht, 0, DHT_TIMEOUT_US) &&
        dht_read_byte(dht, &dht->RH1) &&
        dht_read_byte(dht, &dht->RH2) &&
        dht_read_byte(dht, &dht->T1) &&
@@ -156,7 +151,6 @@ u8 dht_read_TempHum(dht_handle_t *dht)
     }
 
     taskEXIT_CRITICAL();
-
     if(!ok)
     {
         return 0;

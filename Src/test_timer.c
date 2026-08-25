@@ -42,7 +42,18 @@ dht_data_t dht_data2;
 
 void SystemInit()
 {
-    led_init();
+    clock_init();
+    delay_init(); 
+    adc_init();
+    led_init(GPIOA,PIN_6);
+    led_init(GPIOA,PIN_7);
+    led_init(GPIOC,PIN_6);
+    led_init(GPIOC,PIN_7);
+    led_init(GPIOC,PIN_8);
+    led_init(GPIOC,PIN_9);
+    led_init(GPIOD,PIN_15);
+    led_init(GPIOD,PIN_14);
+    led_init(GPIOD,PIN_13);
 
 }
 void vApplicationStackOverflowHook( TaskHandle_t xTask,
@@ -60,9 +71,10 @@ void func_1(void *param)
 {
     while(1)
     {
-        led_on(A6);
+        led_toggle(GPIOD,PIN_15);
+        led_on(GPIOA,PIN_6);
         vTaskDelay(2500);
-        led_off(A6);
+        led_off(GPIOA,PIN_6);
         vTaskDelay(2500);
 
     }
@@ -72,9 +84,10 @@ void func_2(void *param)
 {
     while(1)
     {
-        led_on(A7);
+        led_toggle(GPIOD,PIN_14);
+        led_on(GPIOA,PIN_7);
         vTaskDelay(1000);
-        led_off(A7);
+        led_off(GPIOA,PIN_7);
         vTaskDelay(1000);
         
     }
@@ -89,6 +102,7 @@ void func_3(void *param)
        //wait unitl temp_event is set
         xEventGroupWaitBits(temp_event, TEMP_READY_BIT, pdTRUE, pdTRUE, portMAX_DELAY);
         //float temp = common_menmony; // read dât from common menmory
+        led_toggle(GPIOD,PIN_13);
         float temp_list[TEMP_BATCH_SIZE];
         /*
         xQueueReceive(temp_queue, &temp, pdMS_TO_TICKS(10000));      
@@ -120,7 +134,7 @@ void func_4(void *param)
         float temp = adc_get_temp_ss();
         //common_menmony = temp; //write temp_ss data common menmory
         xQueueSend(temp_queue, &temp, pdMS_TO_TICKS(10000));
-       
+        led_toggle(GPIOC,PIN_8);
         if(++measure_cnt >= TEMP_BATCH_SIZE)
         {
             measure_cnt = 0;
@@ -136,6 +150,7 @@ void func_5(void *param)
     while(1)
     {
         xSemaphoreTake(uart_lock, portMAX_DELAY);
+        led_toggle(GPIOC,PIN_7);
         printlog("\033[0;32m[task 5]\033[0m: hello world \r\n");
         xSemaphoreGive(uart_lock);
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -149,6 +164,7 @@ void func_6(void *param)
     while(1)
     {
         // sensor 1
+        led_toggle(GPIOC,PIN_6);
         if(dht_read_TempHum(&dht_1) == 1)
         {
             dht_data1.t[i1] = dht_1.T;
@@ -188,6 +204,7 @@ void func_7(void *param)
         /* code */
         xQueueReceive(dht_1_queue,&dht_data,portMAX_DELAY);
         xSemaphoreTake(uart_lock, portMAX_DELAY);
+        led_toggle(GPIOC,PIN_9);
         printlog("\033[0;33m[task 7]\033[0m T: [");
         for(int i = 0;i < 5; i++)
         {
@@ -201,7 +218,7 @@ void func_7(void *param)
         printlog("\b\b]\r\n");
         xSemaphoreGive(uart_lock);
         
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(5000));
 
     }
     
@@ -214,6 +231,7 @@ void func_8(void *param)
         /* code */
         xQueueReceive(dht_2_queue,&dht_data,portMAX_DELAY);
         xSemaphoreTake(uart_lock, portMAX_DELAY);
+        led_toggle(GPIOC,PIN_10);
         printlog("\033[0;33m[task 8]\033[0m T: [");
         for(int i = 0;i < 5; i++)
         {
@@ -225,18 +243,13 @@ void func_8(void *param)
             printlog("%.2f; ",dht_data.rh[i]);
         }
         printlog("\b\b]\r\n");
-        xSemaphoreGive(uart_lock);
-        
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        xSemaphoreGive(uart_lock);    
+        vTaskDelay(pdMS_TO_TICKS(5000));
     }
     
 }
 int main()
 {   
-    clock_init();
-    delay_init(); 
-    led_init();
-    adc_init();
     TaskHandle_t task_1 = NULL;
     TaskHandle_t task_2 = NULL;
     TaskHandle_t task_3 = NULL;
@@ -256,99 +269,66 @@ int main()
     }
     if(dht_1_queue == NULL)
     {
-        while(1)
-        {
-        }
+        while(1);      
     }
     if(dht_2_queue == NULL)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
 
     temp_event = xEventGroupCreate();
     if(temp_event == NULL)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
-
     uart_lock = xSemaphoreCreateMutex();
     if(uart_lock == NULL)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
-
     if(xTaskCreate(func_1, "task 1", 512, NULL, 0, &task_1) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
-
     if(xTaskCreate(func_2, "task 2", 512, NULL, 0, &task_2) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
     if(xTaskCreate(func_3, "task_3", 512, NULL, 0, &task_3) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
 
     if(xTaskCreate(func_4, "task_4", 512, NULL, 0, &task_4) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
     if(xTaskCreate(func_5, "task_5", 512, NULL, 0, &task_5) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
     if(xTaskCreate(func_8, "task_8", 512, NULL, 0, &task_8) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
     if(xTaskCreate(func_6, "task_6", 512, NULL, 0, &task_6) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
     if(xTaskCreate(func_7, "task_7", 512, NULL, 0, &task_7) != pdPASS)
     {
-        while(1)
-        {
-        }
+        while(1);
     }
-    
     vTaskStartScheduler(); 
-    
     while(1)
-    {   
-        
+    {          
     }
     return 0;
-
 }
 
 void HardFault_Handler()
 {
-
     while(1)
     {
-
     }
 }
