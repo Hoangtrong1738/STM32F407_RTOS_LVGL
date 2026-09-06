@@ -1,5 +1,5 @@
 
-	TARGET      := build/blink_led
+TARGET      := build/blink_led
 BUILD_DIR   := build
 MAP_FILE    := file.map
 LINKER      := STM32F407VETX_FLASH.ld

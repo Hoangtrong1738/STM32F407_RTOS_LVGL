@@ -16,19 +16,19 @@ Description:			This is an STM32 device driver library for the ILI9341 SPI LCD di
 #ifndef MY_ILI9341_H_
 #define MY_ILI9341_H_
 
+//List of includes
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include "delay.h"
 #include "gpio.h"
+#include "spi.h"
 #include "stm32f407xx.h"
 
 typedef GPIO_RegDef_t GPIO_TypeDef;
 typedef SPI_RegDef_t SPI_HandleTypeDef;
-
 //LCD dimensions defines
 #define ILI9341_WIDTH       240
 #define ILI9341_HEIGHT      320
@@ -90,7 +90,7 @@ typedef SPI_RegDef_t SPI_HandleTypeDef;
 #define COLOR_LGRAY           0xC618      
 #define COLOR_DGRAY           0x7BEF    
 #define COLOR_BLUE            0x001F    
-#define COLOR_BLUE2			   0x051D
+#define COLOR_BLUE2			      0x051D
 #define COLOR_GREEN           0x07E0      
 #define COLOR_GREEN2		      0xB723
 #define COLOR_GREEN3		      0x8000
@@ -103,19 +103,6 @@ typedef SPI_RegDef_t SPI_HandleTypeDef;
 #define COLOR_GREENYELLOW     0xAFE5     
 #define COLOR_BROWN 			    0XBC40 
 #define COLOR_BRRED 			    0XFC07 
-
-
-typedef struct
-{
-   /* data */
-   GPIO_RegDef_t *port_DC;
-   u16 pin_DC;
-   GPIO_RegDef_t *port_CS;
-   u16 pin_CS;
-   GPIO_RegDef_t *port_RESET;
-   u16 pin_RESET;
-   SPI_RegDef_t *spi;
-}ILI9341_t;
 
 //Functions defines Macros
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
@@ -164,3 +151,4 @@ void ILI9341_setRotation(uint8_t rotate);
 uint8_t ILI9341_getRotation(void);
 
 #endif /* MY_ILI9341_H_ */
+

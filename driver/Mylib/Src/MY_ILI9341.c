@@ -18,9 +18,16 @@ Description:			This is an STM32 device driver library for the ILI9341 SPI LCD di
 
 static uint8_t rotationNum=1;
 static bool _cp437    = false;
+//Chip Select pin
+static GPIO_TypeDef  *tftCS_GPIO;
+static uint16_t tftCS_PIN;
+//Data Command pin
+static GPIO_TypeDef  *tftDC_GPIO;
+static uint16_t tftDC_PIN;
+//Reset pin
+static GPIO_TypeDef  *tftRESET_GPIO;
+static uint16_t tftRESET_PIN;
 
-
-#define ILI9341_SPI_BAUD_DIV SPI_SCLK_SPEED_DIV2
 #define ILI9341_DMA_CHUNK_BYTES 4096U
 
 static uint8_t ili9341_dma_buffer[ILI9341_DMA_CHUNK_BYTES];
@@ -37,178 +44,18 @@ static void ILI9341_GPIO_Write(GPIO_TypeDef *port, uint16_t pin, uint8_t value)
 	}
 }
 
-static void ILI9341_GPIO(ILI9341_t *tft9341)
-{
-	GPIO_Handle_t DC;
-	memset(&DC, 0, sizeof(DC));
-	DC.pGPIOx = tft9341->pin_DC;
-	DC.GPIO_PinConfig.GPIO_PinNumber = tft9341->pin_DC;
-	DC.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	DC.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_HIGH;
-	DC.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
-	DC.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
-	GPIO_Init(&DC);
-
-	GPIO_Handle_t CS;
-	memset(&CS, 0, sizeof(CS));
-	CS.pGPIOx = tft9341->pin_CS;
-	CS.GPIO_PinConfig.GPIO_PinNumber = tft9341->pin_CS;
-	CS.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	CS.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_HIGH;
-	CS.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
-	CS.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
-	GPIO_Init(&CS);
-
-	GPIO_Handle_t RET;
-	memset(&RET, 0, sizeof(RET));
-	RET.pGPIOx = tft9341->pin_RESET;
-	RET.GPIO_PinConfig.GPIO_PinNumber = tft9341->pin_RESET;
-	RET.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_OUT;
-	RET.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_HIGH;
-	RET.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
-	RET.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
-	GPIO_Init(&RET);
-}
-void ILI9341_GPIO(ILI9341_t *tft9341,   GPIO_RegDef_t *port_DC, u16 pin_DC,GPIO_RegDef_t *port_CS
-	,u16 pin_CS, GPIO_RegDef_t *port_RESET, u16 pin_RESET, SPI_RegDef_t *spi)
-{
-	tft9341->port_DC = port_DC;
-	tft9341->pin_DC = pin_DC;
-	tft9341->port_CS = port_CS;
-	tft9341->pin_CS = pin_CS;
-	tft9341->port_RESET = port_RESET;
-	tft9341->pin_RESET = pin_RESET;
-	tft9341->spi = spi;
-	ILI9341_GPIO(tft9341);
-}
-static void ILI9341_SPI1_Init(void)
+static void ILI9341_GPIO_OutputInit(GPIO_TypeDef *port, uint16_t pin)
 {
 	GPIO_Handle_t gpio;
-
 	memset(&gpio, 0, sizeof(gpio));
-	gpio.pGPIOx = GPIOA;
-	gpio.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_ALTFM;
+	gpio.pGPIOx = port;
+	gpio.GPIO_PinConfig.GPIO_PinNumber = pin;
+	gpio.GPIO_PinConfig.GPIO_PinMode = GPIO_MODE_OUT;
 	gpio.GPIO_PinConfig.GPIO_PinSpeed = GPIO_SPEED_HIGH;
 	gpio.GPIO_PinConfig.GPIO_PinOPType = GPIO_OP_TYPE_PP;
 	gpio.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
-	gpio.GPIO_PinConfig.GPIO_PinAltFunMode = 5;
-
-	gpio.GPIO_PinConfig.GPIO_PinNumber = PIN_5;
 	GPIO_Init(&gpio);
-	gpio.GPIO_PinConfig.GPIO_PinNumber = PIN_6;
-	GPIO_Init(&gpio);
-	gpio.GPIO_PinConfig.GPIO_PinNumber = PIN_7;
-	GPIO_Init(&gpio);
-
-	SPI1_PCLK_EN();
-	DMA2_PCLK_EN();
-
-	SPI1->CR1 = 0;
-	SPI1->CR2 = 0;
-	SPI1->CR1 |= (ILI9341_SPI_BAUD_DIV << SPI_CR1_BR);
-	SPI1->CR1 |= (1U << SPI_CR1_MSTR);
-	SPI1->CR1 |= (1U << SPI_CR1_SSI) | (1U << SPI_CR1_SSM);
-	SPI1->CR1 |= (1U << SPI_CR1_BIDIMODE) | (1U << SPI_CR1_BIDIOE);
-	SPI1->CR1 |= (1U << SPI_CR1_SPE);
 }
-
-static void ILI9341_SPI_WaitIdle(void)
-{
-	while((SPI1->SR & SPI_TXE_FLAG) == 0U)
-	{
-	}
-	while((SPI1->SR & SPI_BUSY_FLAG) != 0U)
-	{
-	}
-}
-
-static void ILI9341_SPI_EnableTxOnly(void)
-{
-	ILI9341_SPI_WaitIdle();
-	SPI1->CR1 &= ~(1U << SPI_CR1_SPE);
-	SPI1->CR1 |= (1U << SPI_CR1_BIDIMODE) | (1U << SPI_CR1_BIDIOE);
-	SPI1->CR1 |= (1U << SPI_CR1_SPE);
-}
-
-static void ILI9341_SPI_Write8(uint8_t data)
-{
-	ILI9341_SPI_EnableTxOnly();
-	while((SPI1->SR & SPI_TXE_FLAG) == 0U)
-	{
-	}
-	*((_vo uint8_t *)&SPI1->DR) = data;
-	ILI9341_SPI_WaitIdle();
-}
-
-static void ILI9341_SPI_WriteBlocking(const uint8_t *data, uint32_t size)
-{
-	ILI9341_SPI_EnableTxOnly();
-	while(size--)
-	{
-		while((SPI1->SR & SPI_TXE_FLAG) == 0U)
-		{
-		}
-		*((_vo uint8_t *)&SPI1->DR) = *data++;
-	}
-	ILI9341_SPI_WaitIdle();
-}
-
-static void ILI9341_SPI_WriteDMA(const uint8_t *data, uint32_t size)
-{
-	if(size == 0U)
-	{
-		return;
-	}
-
-	ILI9341_SPI_EnableTxOnly();
-	while((DMA2->S[3].CR & (1U << DMA_SxCR_EN)) != 0U)
-	{
-	}
-
-	DMA2->LIFCR = DMA_STREAM3_FLAG_MASK;
-	DMA2->S[3].CR = 0;
-	DMA2->S[3].PAR = (u32)&SPI1->DR;
-	DMA2->S[3].M0AR = (u32)data;
-	DMA2->S[3].NDTR = size;
-	DMA2->S[3].FCR = 0;
-	DMA2->S[3].CR =
-		(3U << DMA_SxCR_CHSEL) |
-		(DMA_DIR_MEMORY_TO_PERIPHERAL << DMA_SxCR_DIR) |
-		(1U << DMA_SxCR_MINC) |
-		(DMA_PRIORITY_HIGH << DMA_SxCR_PL);
-
-	SPI1->CR2 |= (1U << SPI_CR2_TXDMAEN);
-	DMA2->S[3].CR |= (1U << DMA_SxCR_EN);
-
-	while((DMA2->LISR & (DMA_STREAM3_TCIF | DMA_STREAM3_TEIF)) == 0U)
-	{
-	}
-
-	DMA2->S[3].CR &= ~(1U << DMA_SxCR_EN);
-	while((DMA2->S[3].CR & (1U << DMA_SxCR_EN)) != 0U)
-	{
-	}
-	SPI1->CR2 &= ~(1U << SPI_CR2_TXDMAEN);
-	ILI9341_SPI_WaitIdle();
-	DMA2->LIFCR = DMA_STREAM3_FLAG_MASK;
-}
-
-static void ILI9341_WriteDataBytes(ILI9341_t *tft9341,const uint8_t *data, uint32_t size)
-{
-	ILI9341_GPIO_Write(tft9341->port_DC, tft9341->pin_DC, 1);
-	ILI9341_GPIO_Write(tft9341->pin_CS, tft9341->pin_CS, 0);
-
-	while(size > 0U)
-	{
-		uint32_t chunk = (size > 65535U) ? 65535U : size;
-		ILI9341_SPI_WriteDMA(data, chunk);
-		data += chunk;
-		size -= chunk;
-	}
-
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->pin_CS, 1);
-}
-
 static //Text simple font array (You can your own font)
 const unsigned char font1[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00,
@@ -471,46 +318,30 @@ const unsigned char font1[] = {
 
 //***** Functions prototypes *****//
 //1. Write Command to LCD
-void ILI9341_SendCommand(ILI9341_t *tft9341,uint8_t com)
+void ILI9341_SendCommand(uint8_t com)
 {
-	//*(__IO uint8_t *)(0x60000000) = com;
 	uint8_t tmpCmd = com;
-	//Set DC HIGH for COMMAND mode
-	ILI9341_GPIO_Write(tft9341->port_DC, tft9341->pin_DC, 0);
-	//Put CS LOW
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->pin_CS, 0);
-	//Write byte using SPI
-	ILI9341_SPI_Write8(tmpCmd);
-	//Bring CS HIGH
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 1);
+	ILI9341_GPIO_Write(tftDC_GPIO, tftDC_PIN, 0);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 0);
+	spi1_write8(tmpCmd);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 1);
 }
 
 //2. Write data to LCD
-void ILI9341_SendData(ILI9341_t *tft9341,uint8_t data)
+void ILI9341_SendData(uint8_t data)
 {
-	//*(__IO uint8_t *)(0x60040000) = data;
-	uint8_t tmpCmd = data;
-	//Set DC LOW for DATA mode
-	ILI9341_GPIO_Write(tft9341->port_DC, tft9341->pin_DC, 1);
-	//Put CS LOW
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 0);
-	//Write byte using SPI
-	ILI9341_SPI_Write8(tmpCmd);
-	//Bring CS HIGH
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 1);
+	uint8_t tmpData = data;
+	ILI9341_GPIO_Write(tftDC_GPIO, tftDC_PIN, 1);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 0);
+	spi1_write8(tmpData);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 1);
 }
 //2.2 Write multiple/DMA
-void ILI9341_SendData_Multi(ILI9341_t *tft9341, uint16_t Colordata, uint32_t size)
+void ILI9341_SendData_Multi(uint16_t Colordata, uint32_t size)
 {
-	uint32_t bytes_to_fill;
-	uint32_t chunk;
-	
-	//Set DC LOW for DATA mode
-	ILI9341_GPIO_Write(tft9341->port_DC, tft9341->pin_DC, 1);
-	//Put CS LOW
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 0);
+	uint32_t bytes_to_send = size * 2U;
+	uint32_t chunk = ILI9341_DMA_CHUNK_BYTES;
 
-	chunk = ILI9341_DMA_CHUNK_BYTES;
 	if((chunk & 1U) != 0U)
 	{
 		chunk--;
@@ -522,16 +353,17 @@ void ILI9341_SendData_Multi(ILI9341_t *tft9341, uint16_t Colordata, uint32_t siz
 		ili9341_dma_buffer[i + 1U] = (uint8_t)(Colordata & 0xFFU);
 	}
 
-	bytes_to_fill = size * 2U;
-	while(bytes_to_fill > 0U)
+	ILI9341_GPIO_Write(tftDC_GPIO, tftDC_PIN, 1);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 0);
+
+	while(bytes_to_send > 0U)
 	{
-		uint32_t transfer = (bytes_to_fill > chunk) ? chunk : bytes_to_fill;
-		ILI9341_SPI_WriteDMA(ili9341_dma_buffer, transfer);
-		bytes_to_fill -= transfer;
+		uint32_t transfer = (bytes_to_send > chunk) ? chunk : bytes_to_send;
+		spi1_write_dma(ili9341_dma_buffer, transfer);
+		bytes_to_send -= transfer;
 	}
 
-	//Bring CS HIGH
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 1);
+	ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 1);
 }
 
 //3. Set cursor position
@@ -551,100 +383,103 @@ void ILI9341_SetCursorPosition(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y
   ILI9341_SendCommand (ILI9341_GRAM);
 }
 //4. Initialise function
-void ILI9341_Init(ILI9341_t *tft9341,   GPIO_RegDef_t *port_DC, u16 pin_DC,GPIO_RegDef_t *port_CS
-	,u16 pin_CS, GPIO_RegDef_t *port_RESET, u16 pin_RESET, SPI_RegDef_t *spi)
+void ILI9341_Init(SPI_HandleTypeDef *spiLcdHandle, GPIO_TypeDef *csPORT, uint16_t csPIN, GPIO_TypeDef *dcPORT, uint16_t dcPIN, GPIO_TypeDef *resetPORT, uint16_t resetPIN)
  {
-	 // SPI1_TX uses DMA2 Stream 3 Channel 3 on STM32F407.
-	tft9341->port_DC = port_DC;
-	tft9341->pin_DC = pin_DC;
-	tft9341->port_CS = port_CS;
-	tft9341->pin_CS = pin_CS;
-	tft9341->port_RESET = port_RESET;
-	tft9341->pin_RESET = pin_RESET;
-	tft9341->spi = spi;
-	ILI9341_GPIO(tft9341);
-	ILI9341_SPI1_Init();
-	ILI9341_GPIO_Write(tft9341->port_CS, tft9341->port_CS, 1);
+	 (void)spiLcdHandle;
+	 spi1_lcd_init();
+	 //CS pin
+	 tftCS_GPIO = csPORT;
+	 tftCS_PIN = csPIN;
+	 //DC pin
+	 tftDC_GPIO = dcPORT;
+	 tftDC_PIN = dcPIN;
+	 ILI9341_GPIO_OutputInit(tftCS_GPIO, tftCS_PIN);
+	 ILI9341_GPIO_OutputInit(tftDC_GPIO, tftDC_PIN);
+	 ILI9341_GPIO_Write(tftCS_GPIO, tftCS_PIN, 1);
 	 //RESET pin
-	ILI9341_GPIO_Write(tft9341->port_RESET, tft9341->pin_RESET, 1);  //Turn LCD ON
+	 tftRESET_GPIO = resetPORT;
+	 tftRESET_PIN = resetPIN;
+	 ILI9341_GPIO_OutputInit(tftRESET_GPIO, tftRESET_PIN);
+	 ILI9341_GPIO_Write(resetPORT, resetPIN, 1);  //Turn LCD ON
 	 
-   ILI9341_SendCommand (tft9341,ILI9341_RESET); // software reset comand
+   ILI9341_SendCommand (ILI9341_RESET); // software reset comand
    delay_ms(100);
-   ILI9341_SendCommand (tft9341,ILI9341_DISPLAY_OFF); // display off
+   ILI9341_SendCommand (ILI9341_DISPLAY_OFF); // display off
    //------------power control------------------------------
-   ILI9341_SendCommand (tft9341,ILI9341_POWER1); // power control
-   ILI9341_SendData   (tft9341,0x26); // GVDD = 4.75v
-   ILI9341_SendCommand (tft9341,ILI9341_POWER2); // power control
-   ILI9341_SendData   (tft9341,0x11); // AVDD=VCIx2, VGH=VCIx7, VGL=-VCIx3
+   ILI9341_SendCommand (ILI9341_POWER1); // power control
+   ILI9341_SendData   (0x26); // GVDD = 4.75v
+   ILI9341_SendCommand (ILI9341_POWER2); // power control
+   ILI9341_SendData   (0x11); // AVDD=VCIx2, VGH=VCIx7, VGL=-VCIx3
    //--------------VCOM-------------------------------------
    ILI9341_SendCommand (ILI9341_VCOM1); // vcom control
-   ILI9341_SendData   (tft9341,0x35); // Set the VCOMH voltage (0x35 = 4.025v)
-   ILI9341_SendData   (tft9341,0x3e); // Set the VCOML voltage (0x3E = -0.950v)
-   ILI9341_SendCommand (tft9341,ILI9341_VCOM2); // vcom control
-   ILI9341_SendData   (tft9341,0xbe);
+   ILI9341_SendData   (0x35); // Set the VCOMH voltage (0x35 = 4.025v)
+   ILI9341_SendData   (0x3e); // Set the VCOML voltage (0x3E = -0.950v)
+   ILI9341_SendCommand (ILI9341_VCOM2); // vcom control
+   ILI9341_SendData   (0xbe);
 
    //------------memory access control------------------------
-   ILI9341_SendCommand (tft9341,ILI9341_MAC); // memory access control
-   ILI9341_SendData(tft9341,0x48);
+   ILI9341_SendCommand (ILI9341_MAC); // memory access control
+   ILI9341_SendData(0x48);
 
-   ILI9341_SendCommand (tft9341,ILI9341_PIXEL_FORMAT); // pixel format set
-   ILI9341_SendData   (tft9341,0x55); // 16bit /pixel
+   ILI9341_SendCommand (ILI9341_PIXEL_FORMAT); // pixel format set
+   ILI9341_SendData   (0x55); // 16bit /pixel
 
-	 ILI9341_SendCommand(tft9341,ILI9341_FRC);
-   ILI9341_SendData(tft9341,0);
-   ILI9341_SendData(tft9341,0x1F);
+	 ILI9341_SendCommand(ILI9341_FRC);
+   ILI9341_SendData(0);
+   ILI9341_SendData(0x1F);
    //-------------ddram ----------------------------
-   ILI9341_SendCommand (tft9341,ILI9341_COLUMN_ADDR); // column set
-   ILI9341_SendData   (tft9341,0x00); // x0_HIGH---0
-   ILI9341_SendData   (tft9341,0x00); // x0_LOW----0
-   ILI9341_SendData   (tft9341,0x00); // x1_HIGH---240
-   ILI9341_SendData   (tft9341,0xEF); // x1_LOW----240
-   ILI9341_SendCommand (tft9341,ILI9341_PAGE_ADDR); // page address set
-   ILI9341_SendData   (tft9341,0x00); // y0_HIGH---0
-   ILI9341_SendData   (tft9341,0x00); // y0_LOW----0
-   ILI9341_SendData   (tft9341,0x01); // y1_HIGH---320
-   ILI9341_SendData   (tft9341,0x3F); // y1_LOW----320
+   ILI9341_SendCommand (ILI9341_COLUMN_ADDR); // column set
+   ILI9341_SendData   (0x00); // x0_HIGH---0
+   ILI9341_SendData   (0x00); // x0_LOW----0
+   ILI9341_SendData   (0x00); // x1_HIGH---240
+   ILI9341_SendData   (0xEF); // x1_LOW----240
+   ILI9341_SendCommand (ILI9341_PAGE_ADDR); // page address set
+   ILI9341_SendData   (0x00); // y0_HIGH---0
+   ILI9341_SendData   (0x00); // y0_LOW----0
+   ILI9341_SendData   (0x01); // y1_HIGH---320
+   ILI9341_SendData   (0x3F); // y1_LOW----320
 
-   ILI9341_SendCommand (tft9341,ILI9341_TEARING_OFF); // tearing effect off
+   ILI9341_SendCommand (ILI9341_TEARING_OFF); // tearing effect off
    //LCD_write_cmd(ILI9341_TEARING_ON); // tearing effect on
    //LCD_write_cmd(ILI9341_DISPLAY_INVERSION); // display inversion
-   ILI9341_SendCommand (tft9341,ILI9341_Entry_Mode_Set); // entry mode set
+   ILI9341_SendCommand (ILI9341_Entry_Mode_Set); // entry mode set
    // Deep Standby Mode: OFF
    // Set the output level of gate driver G1-G320: Normal display
    // Low voltage detection: Disable
-   ILI9341_SendData   (tft9341,0x07);
+   ILI9341_SendData   (0x07);
    //-----------------display------------------------
-   ILI9341_SendCommand (tft9341,ILI9341_DFC); // display function control
+   ILI9341_SendCommand (ILI9341_DFC); // display function control
    //Set the scan mode in non-display area
    //Determine source/VCOM output in a non-display area in the partial display mode
-   ILI9341_SendData   (tft9341,0x0a);
+   ILI9341_SendData   (0x0a);
    //Select whether the liquid crystal type is normally white type or normally black type
    //Sets the direction of scan by the gate driver in the range determined by SCN and NL
    //Select the shift direction of outputs from the source driver
    //Sets the gate driver pin arrangement in combination with the GS bit to select the optimal scan mode for the module
    //Specify the scan cycle interval of gate driver in non-display area when PTG to select interval scan
-   ILI9341_SendData   (tft9341,0x82);
+   ILI9341_SendData   (0x82);
    // Sets the number of lines to drive the LCD at an interval of 8 lines
-   ILI9341_SendData   (tft9341,0x27);
-   ILI9341_SendData   (tft9341,0x00); // clock divisor
+   ILI9341_SendData   (0x27);
+   ILI9341_SendData   (0x00); // clock divisor
 
-   ILI9341_SendCommand (tft9341,ILI9341_SLEEP_OUT); // sleep out
+   ILI9341_SendCommand (ILI9341_SLEEP_OUT); // sleep out
    delay_ms(100);
-   ILI9341_SendCommand (tft9341,ILI9341_DISPLAY_ON); // display on
+   ILI9341_SendCommand (ILI9341_DISPLAY_ON); // display on
    delay_ms(100);
-   ILI9341_SendCommand (tft9341,ILI9341_GRAM); // memory write
+   ILI9341_SendCommand (ILI9341_GRAM); // memory write
    delay_ms(5);
  }
 
 //5. Write data to a single pixel
-void ILI9341_DrawPixel(ILI9341_t *tft9341,uint16_t x, uint16_t y, uint16_t color) {
+void ILI9341_DrawPixel(uint16_t x, uint16_t y, uint16_t color) {
   ILI9341_SetCursorPosition(x, y, x, y);
-	ILI9341_SendData(tft9341,color>>8);
-	ILI9341_SendData(tft9341,color&0xFF);
+	ILI9341_SendData(color>>8);
+	ILI9341_SendData(color&0xFF);
 }
 //6. Fill the entire screen with a background color
 void ILI9341_Fill(uint16_t color) {
 	uint32_t n = ILI9341_PIXEL_COUNT;
+	uint16_t myColor = 0xFF;
 	
 	if(rotationNum==1 || rotationNum==3)
 	{
@@ -656,14 +491,22 @@ void ILI9341_Fill(uint16_t color) {
 	}
 	
 	
-	ILI9341_SendData_Multi(color, n);
+	while (n) {
+			n--;
+       ILI9341_SendData(color>>8);
+				ILI9341_SendData(color&0xff);
+	}
 }
 //7. Rectangle drawing functions
 void ILI9341_Fill_Rect(unsigned int x0,unsigned int y0, unsigned int x1,unsigned int y1, uint16_t color) { 
 	uint32_t n = ((x1+1)-x0)*((y1+1)-y0);
 	if (n>ILI9341_PIXEL_COUNT) n=ILI9341_PIXEL_COUNT;
 	ILI9341_SetCursorPosition(x0, y0, x1, y1);
-	ILI9341_SendData_Multi(color, n);
+	while (n) {
+			n--;
+      ILI9341_SendData(color>>8);
+				ILI9341_SendData(color&0xff);
+	}
 }
 
 //8. Circle drawing functions
@@ -946,7 +789,7 @@ void ILI9341_printText(char text[], int16_t x, int16_t y, uint16_t color, uint16
 {
 	int16_t offset;
 	offset = size*6;
-	for(uint16_t i=0; i<40 && text[i]!='\0'; i++)
+	for(uint16_t i=0; i<40 && text[i]!=NULL; i++)
 	{
 		ILI9341_drawChar(x+(offset*i), y, text[i],color,bg,size);
 	}
@@ -957,7 +800,10 @@ void ILI9341_printImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t 
 {
 	uint32_t n = size;
 	ILI9341_SetCursorPosition(x, y, w+x-1, h+y-1);
-	ILI9341_WriteDataBytes(data, n);
+	for(uint32_t i=0; i<n ; i++)
+	{
+		ILI9341_SendData(data[i]);
+	}
 }
 
 //13. Set screen rotation
@@ -997,3 +843,4 @@ uint8_t ILI9341_getRotation(void)
 {
 	return rotationNum;
 }
+

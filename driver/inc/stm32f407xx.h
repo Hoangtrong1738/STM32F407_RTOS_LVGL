@@ -115,7 +115,7 @@ typedef int32_t i32;
 	dia chi co so cua cac ngoai vi dang ket noi voi bus APB2
 */
 
-#define EXTI_BASE        (APB2PERIPH_BASEADDR + 0x3C00)
+#define EXTI_BASE        	(APB2PERIPH_BASEADDR + 0x3C00)
 #define SPI1_BASE             (APB2PERIPH_BASEADDR + 0x3000)
 #define SYSCFG_BASE           (APB2PERIPH_BASEADDR + 0x3800)
 #define USART1_BASE           (APB2PERIPH_BASEADDR + 0x1000)

@@ -16,11 +16,12 @@ Description:			This is an STM32 device driver library for the TSC2046 resistive 
 #ifndef TSC2046_H_
 #define TSC2046_H_
 
+//Header files
 #include "MY_ILI9341.h"
 #include "delay.h"
 #include "gpio.h"
-#include "stm32f407xx.h"
-#include <math.h>
+#include "spi.h"
+#include "stm32f407xx.h"#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 
@@ -98,3 +99,4 @@ uint8_t TSC2046_getOrientation(void);
 TS_TOUCH_DATA_Def TSC2046_GetTouchData(void);
 
 #endif /* TSC2046_H_ */
+

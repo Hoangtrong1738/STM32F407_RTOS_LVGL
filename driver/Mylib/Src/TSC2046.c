@@ -18,7 +18,6 @@ Description:			This is an STM32 device driver library for the TSC2046 resistive 
 
 //Library Private variables
 //1. SPI handle
-static SPI_HandleTypeDef *tsSPIhandle = SPI1;
 //2. Chip Select pin
 static GPIO_TypeDef  *tsCS_GPIO;
 static uint16_t tsCS_PIN;
@@ -32,10 +31,6 @@ static uint8_t ScreenOrientation = 0;
 static TS_CALIBRATE_Def myTS_Calibrate;
 //7. recent raw touch data
 static TS_TOUCH_RAW_Def localRawTouch;
-
-//List of defines and typedefs
-#define _TS_CS_ENBALE		HAL_GPIO_WritePin(tsCS_GPIO, tsCS_PIN, GPIO_PIN_RESET);
-#define _TS_CS_DISABLE		HAL_GPIO_WritePin(tsCS_GPIO, tsCS_PIN, GPIO_PIN_SET);
 
 static void TSC2046_GPIO_Write(GPIO_TypeDef *port, uint16_t pin, uint8_t value)
 {
@@ -61,54 +56,27 @@ static void TSC2046_GPIO_OutputInit(GPIO_TypeDef *port, uint16_t pin)
 	gpio.GPIO_PinConfig.GPIO_PinPuPdControl = GPIO_NO_PUPD;
 	GPIO_Init(&gpio);
 }
-
-static uint8_t TSC2046_SPI_Transfer(uint8_t data)
-{
-	while((tsSPIhandle->SR & SPI_TXE_FLAG) == 0U)
-	{
-	}
-	*((_vo uint8_t *)&tsSPIhandle->DR) = data;
-	while((tsSPIhandle->SR & SPI_RXNE_FLAG) == 0U)
-	{
-	}
-	return *((_vo uint8_t *)&tsSPIhandle->DR);
-}
-
-static void TSC2046_SPI_EnableFullDuplex(void)
-{
-	while((tsSPIhandle->SR & SPI_BUSY_FLAG) != 0U)
-	{
-	}
-	tsSPIhandle->CR1 &= ~(1U << SPI_CR1_SPE);
-	tsSPIhandle->CR1 &= ~((1U << SPI_CR1_BIDIMODE) | (1U << SPI_CR1_BIDIOE));
-	tsSPIhandle->CR1 |= (1U << SPI_CR1_SPE);
-	(void)tsSPIhandle->DR;
-	(void)tsSPIhandle->SR;
-}
-
-#undef _TS_CS_ENBALE
-#undef _TS_CS_DISABLE
-#define _TS_CS_ENBALE		TSC2046_GPIO_Write(tsCS_GPIO, tsCS_PIN, 0)
-#define _TS_CS_DISABLE		TSC2046_GPIO_Write(tsCS_GPIO, tsCS_PIN, 1)
+//List of defines and typedefs
+#define _TS_CS_ENBALE       TSC2046_GPIO_Write(tsCS_GPIO, tsCS_PIN, 0)
+#define _TS_CS_DISABLE      TSC2046_GPIO_Write(tsCS_GPIO, tsCS_PIN, 1)
 
 //Functions definitions
 //1. Send TSC2046 Command and wait for a response
 uint16_t TSC2046_SendCommand(uint8_t cmd)
 {
-	uint8_t spiBuf[3] = {0,0,0};
-	uint16_t return16=0;
-	
-	TSC2046_SPI_EnableFullDuplex();
+	u8 rx_h;
+	u8 rx_l;
+	uint16_t return16;
+
+	spi1_enable_full_duplex();
 	_TS_CS_ENBALE;
-	spiBuf[0] = cmd;
-	TSC2046_SPI_Transfer(spiBuf[0]);
-	//Wait for response (3 ms)
+	(void)spi1_transfer_byte(cmd);
 	delay_ms(3);
-	spiBuf[1] = TSC2046_SPI_Transfer(0x00);
-	spiBuf[2] = TSC2046_SPI_Transfer(0x00);
-	return16 = (spiBuf[1]<<4) + (spiBuf[2]>>4);
+	rx_h = spi1_transfer_byte(0x00U);
+	rx_l = spi1_transfer_byte(0x00U);
 	_TS_CS_DISABLE;
-	
+
+	return16 = ((uint16_t)rx_h << 4) | ((uint16_t)rx_l >> 4);
 	return return16;
 }
 //2. Calibrate resistive touch panel
@@ -214,8 +182,8 @@ TS_TOUCH_RAW_Def TSC2046_GetRawTouch(void)
 //4. Begin function
 bool  TSC2046_Begin(SPI_HandleTypeDef *touchSPI, GPIO_TypeDef *csPort, uint16_t csPin)
 {
-	//Touch Screen SPI
-	tsSPIhandle = (touchSPI != NULL) ? touchSPI : SPI1;
+	(void)touchSPI;
+	spi1_lcd_init();
 	//Chip-Select Port and Pin
 	tsCS_GPIO = csPort;
 	tsCS_PIN = csPin;
@@ -292,4 +260,5 @@ TS_TOUCH_DATA_Def TSC2046_GetTouchData(void)
 	
 	return myTsData;
 }
+
 
